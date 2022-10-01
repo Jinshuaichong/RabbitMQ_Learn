@@ -34,5 +34,4 @@ public class EmitLogTopic {
             System.out.println("生产者发出消息："+value);
     
         }
-    }
-}
+    }}
