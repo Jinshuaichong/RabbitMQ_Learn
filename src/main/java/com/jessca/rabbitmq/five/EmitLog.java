@@ -9,7 +9,7 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * @author jessca
- * 生成消息发给交换机
+ * 生成消息发给交换机 扇出交换机和RoutingKey无关
  */
 public class EmitLog {
     public static final String EXCHANGE_NAME="logs";
