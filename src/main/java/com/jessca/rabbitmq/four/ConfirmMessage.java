@@ -6,6 +6,8 @@ import com.rabbitmq.client.ConfirmCallback;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -89,16 +91,35 @@ public class ConfirmMessage {
         channel.queueDeclare(queueName,true,false,false,null);
         //开启发布确认
         channel.confirmSelect();
+    
+        /**
+         * 线程安全有序的一个哈希表（map） 适用于高并发的情况下
+         *1 轻松的将序号与消息进行关联
+         *2 轻松的批量删除条目
+         *3 支持高并发（多线程）
+         */
+        ConcurrentSkipListMap<Long,String> outstandingConfirms=new ConcurrentSkipListMap<>();
         //开始时间
         long begin = System.currentTimeMillis();
        
         //消息确认成功 回调函数
         ConfirmCallback ackCallback=(deliveryTag,multiple)->{
+            if (multiple) {
+                //2 删除掉已经确认的消息 剩下的就是未确认的消息
+                ConcurrentNavigableMap<Long, String> confirmed = outstandingConfirms.headMap(deliveryTag);
+                confirmed.clear();
+                
+            }else{
+                outstandingConfirms.remove(deliveryTag);
+            }
             System.out.println("已确认的消息："+deliveryTag);
         };
         //消息确认失败 回调函数 1 消息的标记 2 是否批量
         ConfirmCallback nackCallback=(deliveryTag,multiple)->{
-            System.out.println("未确认的消息："+deliveryTag);
+            //3 打印一下未确认的消息有哪些
+            String message = outstandingConfirms.get(deliveryTag);
+            System.out.println("未确认的消息："+message+",tag为："+deliveryTag);
+            //对未确认的消息要进行处理
         };
         //准备消息的监听器 监听那些消息成功了 那些消息失败了
         channel.addConfirmListener(ackCallback,nackCallback);
@@ -107,6 +128,8 @@ public class ConfirmMessage {
         for (int i = 0; i < MESSAGE_COUNT; i++) {
             String message="消息"+i;
             channel.basicPublish("",queueName,null,message.getBytes());
+            //1 此处记录下所有要发送的消息 消息的总和
+            outstandingConfirms.put(channel.getNextPublishSeqNo(),message);
         }
         
         long end = System.currentTimeMillis();
