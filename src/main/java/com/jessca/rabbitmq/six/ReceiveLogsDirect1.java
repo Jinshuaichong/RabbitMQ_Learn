@@ -29,6 +29,5 @@ public class ReceiveLogsDirect1 {
         };
         
         channel.basicConsume("console",deliverCallback,consumerTag->{});
-        
     }
 }

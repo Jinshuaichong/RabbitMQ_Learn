@@ -23,7 +23,5 @@ public class DirectLogs {
             channel.basicPublish(EXCHANGE_NAME,"warning",null,message.getBytes());
             System.out.println("生产者发出消息："+message);
         }
-    
-    
     }
 }

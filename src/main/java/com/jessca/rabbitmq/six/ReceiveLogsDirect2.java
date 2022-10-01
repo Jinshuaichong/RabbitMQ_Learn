@@ -28,6 +28,5 @@ public class ReceiveLogsDirect2 {
         };
         
         channel.basicConsume("disk",deliverCallback,consumerTag->{});
-        
     }
 }
